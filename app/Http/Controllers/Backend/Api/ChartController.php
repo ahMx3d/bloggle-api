@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Http\Controllers\Backend\Api;
+
+use App\Models\Post;
+use App\Models\User;
+use App\Models\Comment;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+
+class ChartController extends Controller
+{
+    public function comments()
+    {
+        $comments = Comment::select(
+            DB::raw('COUNT(*) as count'),
+            DB::raw('Month(created_at) as month')
+        )
+        ->whereYear('created_at', date('Y'))
+        ->groupBy(DB::raw('Month(created_at)'))
+        ->pluck('count', 'month');
+        $posts = Post::typePost()->select(
+            DB::raw('COUNT(*) as count'),
+            DB::raw('Month(created_at) as month')
+        )
+        ->whereYear('created_at', date('Y'))
+        ->orWhereYear('created_at', (date('Y')-1))
+        ->groupBy(DB::raw('Month(created_at)'))
+        ->pluck('count', 'month');
+
+        foreach ($comments->keys() as $monthNumber) {
+            $labels[] = date('F', mktime(0, 0, 0, $monthNumber, 1));
+        }
+
+        $chart['labels']                = $labels;
+        $chart['datasets'][0]['name']   = 'Comments';
+        $chart['datasets'][0]['values'] = $comments->values()->toArray();
+
+        $chart['datasets'][1]['name']   = 'Posts';
+        $chart['datasets'][1]['values'] = $posts->values()->toArray();
+
+        return response()->json($chart);
+    }
+
+    public function users()
+    {
+        $users = User::withCount('posts')
+        ->orderBy('posts_count', 'desc')
+        ->take(3)
+        ->pluck('posts_count', 'name');
+
+        $chart['labels']             = $users->keys()->toArray();
+        $chart['datasets']['name']   = 'Top Users';
+        $chart['datasets']['values'] = $users->values()->toArray();
+
+        return response()->json($chart);
+    }
+}
