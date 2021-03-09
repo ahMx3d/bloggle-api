@@ -19,8 +19,10 @@ class CommentObserver
     {
         if($comment->status == 'Active') Cache::forget('recent_comments');
         // Handle Notifications queue job.
-        dispatch(new SendNewCommentForPostOwnerJob($comment));
         dispatch(new SendNewCommentNotificationForAdminJob($comment));
+        if(auth()->guest() || auth()->id() != $comment->post->user_id){
+            dispatch(new SendNewCommentForPostOwnerJob($comment));
+        }
     }
 
     /**

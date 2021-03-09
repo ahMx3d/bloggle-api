@@ -38,6 +38,7 @@ class ChangePasswordController extends Controller
     /**
      * Update auth user password.
      *
+     * @param App\Http\Requests\Frontend\PasswordRequest $request
      * @return Illuminate\Http\Response
      */
     public function update(PasswordRequest $request)

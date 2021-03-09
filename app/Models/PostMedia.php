@@ -21,6 +21,18 @@ class PostMedia extends Model
 	}
 
     /**
+     * Get the user image or default image from server.
+     *
+     * @return string
+     */
+    public function postImages():string
+    {
+        return ((!$this->file_name)
+        ? asset('assets/posts/default.jpg')
+        : asset("assets/posts/{$this->file_name}"));
+    }
+
+    /**
      * The Media Post Relationship
      * Each media belongs to a post.
      *

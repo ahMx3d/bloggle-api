@@ -39,6 +39,26 @@ class Comment extends Model
 	}
 
     /**
+     * Get the comment's user role.
+     *
+     * @return string
+     */
+    public function userRole():string
+    {
+        return ($this->user_id)? 'Member': 'Guest';
+    }
+
+    /**
+     * Get the comment's status.
+     *
+     * @return int
+     */
+    public function status():int
+    {
+        return ($this->status == 'Active')? 1: 0;
+    }
+
+    /**
      * Get the comment's status.
      *
      * @param  int  $value

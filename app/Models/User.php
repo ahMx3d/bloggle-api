@@ -3,15 +3,19 @@
 namespace App\Models;
 
 use App\Observers\UserObserver;
+use Laravel\Passport\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
+use Nicolaslopezj\Searchable\SearchableTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Mindscms\Entrust\Traits\EntrustUserWithPermissionsTrait;
-use Nicolaslopezj\Searchable\SearchableTrait;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     use
+        HasApiTokens,
+        HasFactory,
         Notifiable,
         SearchableTrait,
         EntrustUserWithPermissionsTrait;    // Entrust Permissions Package.
@@ -56,6 +60,28 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    /**
+     * Get the route key for the model.
+     *
+     * @return string
+     */
+    public function getRouteKeyName()
+    {
+        return 'username';
+    }
+
+    /**
+     * Get the user image or default image from server.
+     *
+     * @return string
+     */
+    public function userImage():string
+    {
+        return ((!$this->user_image)
+        ? asset('assets/users/user.jpeg')
+        : asset("assets/users/{$this->user_image}"));
+    }
 
     /**
      * Display the status record for blade views.

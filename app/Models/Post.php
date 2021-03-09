@@ -33,7 +33,7 @@ class Post extends Model
      *
      * @return array
      */
-    public function sluggable():array
+    public function sluggable(): array
     {
         return [
             'slug' => [
@@ -47,10 +47,34 @@ class Post extends Model
      *
      * @return void
      */
-    protected static function boot(){
-		parent::boot();
-		self::observe(PostObserver::class);
-	}
+    protected static function boot()
+    {
+        parent::boot();
+        self::observe(PostObserver::class);
+    }
+
+    /**
+     * Get the route key for the model.
+     *
+     * @return string
+     */
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
+    /**
+     * Get the post's status in numbers.
+     * 0 = Pending
+     * 1 = Active
+     *
+     * @param  int  $value
+     * @return string
+     */
+    public function status()
+    {
+        return ($this->status == 'Active') ? 1 : 0;
+    }
 
     /**
      * Get the post's status.
@@ -60,7 +84,7 @@ class Post extends Model
      */
     public function getStatusAttribute($value)
     {
-        return ($value == 1)? 'Active': 'Pending';
+        return ($value == 1) ? 'Active' : 'Pending';
     }
 
     /**
@@ -173,14 +197,39 @@ class Post extends Model
     }
 
     /**
-     * The Post Comment Relationship
-     * Each post has many comments.
+     * The active comments count
      *
-     * @return object
+     * @return int
      */
-    public function commentsCount()
+    public function approvedCommentsCount():int
     {
-        return ($this->hasMany(Comment::class)->count())? $this->hasMany(Comment::class)->count(): 'Not Found';
+        return ($this->hasMany(Comment::class)->whereStatus(1)->count())
+            ? $this->hasMany(Comment::class)->whereStatus(1)->count()
+            : 0;
+    }
+
+    /**
+     * Get Comments status as text
+     *
+     * @return string
+     */
+    public function commentable():string
+    {
+        return (!$this->comment_able)
+            ? 'no'
+            : 'yes';
+    }
+
+    /**
+     * Get Comments count
+     *
+     * @return int
+     */
+    public function commentsCount():int
+    {
+        return ($this->hasMany(Comment::class)->count())
+            ? $this->hasMany(Comment::class)->count()
+            : 0;
     }
 
     /**

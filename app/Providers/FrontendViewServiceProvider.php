@@ -78,7 +78,9 @@ class FrontendViewServiceProvider extends ServiceProvider
                 }
 
                 if (!Cache::has('global_tags')) {
-                    $global_tags = Tag::withCount('posts')->get();
+                    $global_tags = Tag::withCount(['posts'=> function ($query){
+                        $query->typePost()->active();
+                    }])->get();
 
                     Cache::remember('global_tags', 3600, function () use ($global_tags){
                         return $global_tags;

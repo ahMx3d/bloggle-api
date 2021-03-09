@@ -6,12 +6,15 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Intervention\Image\Facades\Image;
+use Illuminate\Auth\Events\Registered;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Auth\RegistersUsers;
+use Symfony\Component\HttpFoundation\Response;
 
 class RegisterController extends Controller
 {
@@ -114,10 +117,48 @@ class RegisterController extends Controller
      */
     protected function registered(Request $request, $user)
     {
+        if($request->wantsJson()) return response()->json([
+            'errors'  => false,
+            'message' => 'Registered Successfully, Please check your email for activation',
+            'status'  => Response::HTTP_CREATED,
+        ], Response::HTTP_CREATED);
+
         return redirect_with_msg(
             'frontend.index',
             'Registered Successfully, Please check your email for activation',
             'success'
         );
+    }
+
+    /**
+     * Handle a registration request for the application.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     */
+    public function register(Request $request)
+    {
+        if($request->wantsJson()){
+            $validator = $this->validator($request->all());
+            if($validator->fails()) return response()->json([
+                'message' => 'The given data is invalid.',
+                'errors'  => $validator->errors(),
+                'status'  => Response::HTTP_UNPROCESSABLE_ENTITY,
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $this->validator($request->all())->validate();
+
+        event(new Registered($user = $this->create($request->all())));
+
+        $this->guard()->login($user);
+
+        if ($response = $this->registered($request, $user)) {
+            return $response;
+        }
+
+        return $request->wantsJson()
+                    ? new JsonResponse([], 201)
+                    : redirect($this->redirectPath());
     }
 }

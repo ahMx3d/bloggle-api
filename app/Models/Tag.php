@@ -41,6 +41,18 @@ class Tag extends Model
     }
 
     /**
+     * Get The Post count
+     *
+     * @return int
+     */
+    public function postsCount():int
+    {
+        return ($count = $this->belongsToMany(Post::class, 'posts_tags')->typePost()->active()->count())
+            ? $count
+            : 0;
+    }
+
+    /**
      * Get the tag for the blog posts.
      *
      * @return object

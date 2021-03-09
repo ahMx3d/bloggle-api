@@ -33,7 +33,7 @@ class SendNewCommentForPostOwnerJob implements ShouldQueue, ShouldBroadcast
      */
     public function handle()
     {
-        if(auth()->guest() || auth()->id()!= $this->comment->post->user_id)
+        // if(auth()->guest() || auth()->id() != $this->comment->post->user_id)
             $this->comment->post->user->notify(
                 new NewCommentForPostOwnerNotify($this->comment)
             );

@@ -67,6 +67,18 @@ class Category extends Model
     }
 
     /**
+     * Get The Post count
+     *
+     * @return int
+     */
+    public function postsCount():int
+    {
+        return ($count = $this->hasMany(Post::class)->typePost()->active()->count())
+            ? $count
+            : 0;
+    }
+
+    /**
      * The Category Post Relationship
      * Each category has many posts.
      *

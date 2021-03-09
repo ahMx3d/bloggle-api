@@ -39,7 +39,7 @@ class PasswordRequest extends FormRequest
                     }
                 },
             ],
-            'password'         => 'required|confirmed',
+            'password' => 'required|confirmed',
         ];
     }
 }

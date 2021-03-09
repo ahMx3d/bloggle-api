@@ -3,17 +3,19 @@
 namespace App\Http\Controllers\Frontend\Auth;
 
 use Carbon\Carbon;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-use App\Models\Role;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Intervention\Image\Facades\Image;
 use App\Providers\RouteServiceProvider;
 use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 
 class LoginController extends Controller
@@ -78,15 +80,36 @@ class LoginController extends Controller
      */
     protected function authenticated(Request $request, $user)
     {
-        return ($user->status == 1) ? redirect_with_msg(
+        if (!$user->status) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'errors'  => false,
+                    'message' => 'Please Contact Bloggle Admin',
+                    'status'  => Response::HTTP_OK,
+                ], Response::HTTP_OK);
+            }
+            return redirect_with_msg(
+                'frontend.index',
+                'Please Contact Bloggle Admin',
+                'warning'
+            );
+        }
+
+        if ($request->wantsJson()) {
+            $token = $user->createToken('access-token')->accessToken;
+            return response()->json([
+                'errors'  => false,
+                'message' => 'Logged in Successfully',
+                'token'   => $token,
+                'status'  => Response::HTTP_OK,
+            ], Response::HTTP_OK);
+        }
+
+        return redirect_with_msg(
             'frontend.profile',
             'Logged in Successfully',
             'success',
             $user->username
-        ) : redirect_with_msg(
-            'frontend.index',
-            'Please Contact Bloggle Admin',
-            'warning'
         );
     }
 
@@ -150,8 +173,7 @@ class LoginController extends Controller
         if (!$user->user_image) {
             $fileName = "{$user->username}.jpg";
             $path      = public_path('/assets/users/' . $fileName);
-            Image::make($avatar)->resize(300, 300, function ($constraint)
-            {
+            Image::make($avatar)->resize(300, 300, function ($constraint) {
                 $constraint->aspectRatio();
             })->save($path, 100);
             $user->update(['user_image' => $fileName]);
@@ -175,5 +197,63 @@ class LoginController extends Controller
     public function redirectToProvider(string $provider)
     {
         return Socialite::driver($provider)->redirect();
+    }
+
+    /**
+     * Get a validator for an incoming registration request.
+     *
+     * @param  array  $data
+     * @return \Illuminate\Contracts\Validation\Validator
+     */
+    protected function validator(array $data)
+    {
+        return Validator::make($data, [
+            $this->username() => 'required|string',
+            'password' => 'required|string',
+        ]);
+    }
+
+    /**
+     * Handle a login request to the application.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Illuminate\Http\JsonResponse
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function login(Request $request)
+    {
+        if ($request->wantsJson()) {
+            $validator = $this->validator($request->all());
+            if ($validator->fails()) return response()->json([
+                'message' => 'The given data is invalid.',
+                'errors'  => $validator->errors(),
+                'status'  => Response::HTTP_UNPROCESSABLE_ENTITY,
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        $this->validateLogin($request);
+
+        // If the class is using the ThrottlesLogins trait, we can automatically throttle
+        // the login attempts for this application. We'll key this by the username and
+        // the IP address of the client making these requests into this application.
+        if (
+            method_exists($this, 'hasTooManyLoginAttempts') &&
+            $this->hasTooManyLoginAttempts($request)
+        ) {
+            $this->fireLockoutEvent($request);
+
+            return $this->sendLockoutResponse($request);
+        }
+
+        if ($this->attemptLogin($request)) {
+            return $this->sendLoginResponse($request);
+        }
+
+        // If the login attempt was unsuccessful we will increment the number of attempts
+        // to login and redirect the user back to the login form. Of course, when this
+        // user surpasses their maximum number of attempts they will get locked out.
+        $this->incrementLoginAttempts($request);
+
+        return $this->sendFailedLoginResponse($request);
     }
 }

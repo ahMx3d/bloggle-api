@@ -2,11 +2,13 @@
 
 namespace App\Exceptions;
 
-use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
+use App\Exceptions\ExceptionsTrait;
+use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 
 class Handler extends ExceptionHandler
 {
+    use ExceptionsTrait;
     /**
      * A list of the exception types that are not reported.
      *
@@ -50,6 +52,12 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $exception)
     {
-        return parent::render($request, $exception);
+        // dd(get_class($exception),$exception->getMessage(), $exception);
+        $isApi = $request->expectsJson();
+		return ($isApi)? $this->apiExceptions(
+			$request,
+			$exception
+		): parent::render($request, $exception);
+        // return parent::render($request, $exception);
     }
 }
